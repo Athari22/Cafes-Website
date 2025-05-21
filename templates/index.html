@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cafe&Wifi</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        .cafe-card {
+            transition: transform 0.3s;
+            margin-bottom: 20px;
+        }
+        .cafe-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        .amenity-icon {
+            font-size: 1.2rem;
+            margin-right: 5px;
+        }
+        .amenity-true {
+            color: green;
+        }
+        .amenity-false {
+            color: red;
+        }
+        .search-container {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+
+
+        }
+
+        /* Chat Interface */
+        .chat-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            font-size: 24px;
+            z-index: 1000;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .chat-box {
+            position: fixed;
+            bottom: 90px;
+            right: 20px;
+            width: 350px;
+            max-height: 500px;
+            z-index: 1000;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            display: none;
+        }
+               .chat-header {
+            background-color: var(--primary-color);
+            color: white;
+            border-top-left-radius: 10px;
+            border-top-right-radius: 10px;
+        }
+        .chat-messages {
+            height: 300px;
+            overflow-y: auto;
+            padding: 15px;
+            background-color: #f8f9fa;
+        }
+
+        .chat-input-container {
+            border-bottom-left-radius: 10px;
+            border-bottom-right-radius: 10px;
+        }
+
+        .message {
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            border-radius: 18px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+
+        .user-message {
+            background-color: var(--primary-color);
+            color: white;
+            margin-left: auto;
+            border-bottom-right-radius: 5px;
+        }
+         .bot-message {
+            background-color: #e9ecef;
+            margin-right: auto;
+            border-bottom-left-radius: 5px;
+        }
+
+        .typing-indicator {
+            display: none;
+            font-style: italic;
+            color: #6c757d;
+            margin-bottom: 10px;
+        }
+
+
+        @media (max-width: 576px) {
+            .chat-box {
+                width: 90%;
+                right: 5%;
+            }
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container py-5">
+        <h1 class="text-center mb-4">Welcome to Cafe & Wifi</h1>
+
+        <div class="search-container">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="input-group mb-3">
+                        <input type="text" id="searchLocation" class="form-control" placeholder="Search by location...">
+                        <button class="btn btn-primary" onclick="searchCafes()">Search</button>
+                    </div>
+                </div>
+                <div class="col-md-6 text-end">
+                    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addCafeModal">
+                        <i class="bi bi-plus-circle"></i> Add New Cafe
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="randomCafe" class="mb-5">
+            <h3 class="mb-3">Featured Cafe</h3>
+            <div class="card cafe-card">
+                <div class="card-body" id="randomCafeContent">
+                    <p class="text-center">Click below to discover a random cafe!</p>
+                </div>
+                <div class="card-footer text-center">
+                    <button class="btn btn-outline-primary" onclick="getRandomCafe()">
+                        <i class="bi bi-shuffle"></i> Show Random Cafe
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <h3 class="mb-3">All Cafes</h3>
+        <div id="cafesContainer" class="row">
+            <!-- Cafes will be loaded here -->
+        </div>
+
+        <!-- Add Cafe Modal -->
+        <div class="modal fade" id="addCafeModal" tabindex="-1" aria-labelledby="addCafeModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="addCafeModalLabel">Add New Cafe</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="addCafeForm">
+                            <div class="mb-3">
+                                <label for="name" class="form-label">Cafe Name</label>
+                                <input type="text" class="form-control" id="name" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="map_url" class="form-label">Map URL</label>
+                                <input type="url" class="form-control" id="map_url" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="img_url" class="form-label">Image URL</label>
+                                <input type="url" class="form-control" id="img_url" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="location" class="form-label">Location</label>
+                                <input type="text" class="form-control" id="location" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="seats" class="form-label">Seats</label>
+                                <input type="text" class="form-control" id="seats" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="coffee_price" class="form-label">Coffee Price</label>
+                                <input type="text" class="form-control" id="coffee_price" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Amenities</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="has_toilet" value="1">
+                                    <label class="form-check-label" for="has_toilet">Has Toilet</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="has_wifi" value="1">
+                                    <label class="form-check-label" for="has_wifi">Has Wifi</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="has_sockets" value="1">
+                                    <label class="form-check-label" for="has_sockets">Has Sockets</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="can_take_calls" value="1">
+                                    <label class="form-check-label" for="can_take_calls">Can Take Calls</label>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" onclick="addNewCafe()">Save Cafe</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Update Price Modal -->
+        <div class="modal fade" id="updatePriceModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Update Coffee Price</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" id="cafeIdToUpdate">
+                        <div class="mb-3">
+                            <label for="newPrice" class="form-label">New Price</label>
+                            <input type="text" class="form-control" id="newPrice" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" onclick="updatePrice()">Update</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delete Confirmation Modal -->
+        <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Confirm Delete</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" id="cafeIdToDelete">
+                        <div class="mb-3">
+                            <label for="apiKey" class="form-label">API Key</label>
+                            <input type="password" class="form-control" id="apiKey" required>
+                            <small class="text-muted">Enter the admin API key to delete this cafe.</small>
+                        </div>
+                        <p>Are you sure you want to delete this cafe?</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-danger" onclick="deleteCafe()">Delete</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Load all cafes when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAllCafes();
+            getRandomCafe();
+        });
+
+        // Function to load all cafes
+        function loadAllCafes() {
+            fetch('/all')
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById('cafesContainer');
+                    container.innerHTML = '';
+                    if (data.cafes && data.cafes.length > 0) {
+                        data.cafes.forEach(cafe => {
+                            container.appendChild(createCafeCard(cafe));
+                        });
+                    } else {
+                        container.innerHTML = '<p class="text-center">No cafes found. Add one to get started!</p>';
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        // Function to search cafes by location
+        function searchCafes() {
+            const location = document.getElementById('searchLocation').value;
+            if (!location) {
+                loadAllCafes();
+                return;
+            }
+
+            fetch(`/search?loc=${encodeURIComponent(location)}`)
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById('cafesContainer');
+                    container.innerHTML = '';
+                    if (data.cafes && data.cafes.length > 0) {
+                        data.cafes.forEach(cafe => {
+                            container.appendChild(createCafeCard(cafe));
+                        });
+                    } else {
+                        container.innerHTML = `<p class="text-center">No cafes found in ${location}</p>`;
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        // Function to get a random cafe
+        function getRandomCafe() {
+            fetch('/random')
+                .then(response => response.json())
+                .then(data => {
+                    const content = document.getElementById('randomCafeContent');
+                    if (data.cafe) {
+                        const cafe = data.cafe;
+                        content.innerHTML = `
+                            <img src="${cafe.img_url}" class="card-img-top mb-3" alt="${cafe.name}" style="max-height: 200px; object-fit: cover;">
+                            <h5 class="card-title">${cafe.name}</h5>
+                            <p class="card-text"><i class="bi bi-geo-alt"></i> ${cafe.location}</p>
+                            <p class="card-text"><i class="bi bi-cup-hot"></i> ${cafe.coffee_price || 'Price not available'}</p>
+                            <div class="amenities mb-2">
+                                ${cafe.has_toilet ? '<span class="amenity-true"><i class="bi bi-check-circle-fill amenity-icon"></i>Toilet</span>' : '<span class="amenity-false"><i class="bi bi-x-circle-fill amenity-icon"></i>No Toilet</span>'}
+                                ${cafe.has_wifi ? '<span class="amenity-true"><i class="bi bi-check-circle-fill amenity-icon"></i>Wifi</span>' : '<span class="amenity-false"><i class="bi bi-x-circle-fill amenity-icon"></i>No Wifi</span>'}
+                                ${cafe.has_sockets ? '<span class="amenity-true"><i class="bi bi-check-circle-fill amenity-icon"></i>Sockets</span>' : '<span class="amenity-false"><i class="bi bi-x-circle-fill amenity-icon"></i>No Sockets</span>'}
+                                ${cafe.can_take_calls ? '<span class="amenity-true"><i class="bi bi-check-circle-fill amenity-icon"></i>Calls</span>' : '<span class="amenity-false"><i class="bi bi-x-circle-fill amenity-icon"></i>No Calls</span>'}
+                            </div>
+                            <a href="${cafe.map_url}" target="_blank" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-map"></i> View on Map
+                            </a>
+                        `;
+                    } else {
+                        content.innerHTML = '<p class="text-center">No cafes available</p>';
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        // Function to create a cafe card
+        function createCafeCard(cafe) {
+            const col = document.createElement('div');
+            col.className = 'col-md-6 col-lg-4';
+
+            const card = document.createElement('div');
+            card.className = 'card cafe-card';
+
+            card.innerHTML = `
+                <img src="${cafe.img_url}" class="card-img-top" alt="${cafe.name}" style="height: 200px; object-fit: cover;">
+                <div class="card-body">
+                    <h5 class="card-title">${cafe.name}</h5>
+                    <p class="card-text"><i class="bi bi-geo-alt"></i> ${cafe.location}</p>
+                    <p class="card-text"><i class="bi bi-cup-hot"></i> ${cafe.coffee_price || 'Price not available'}</p>
+                    <p class="card-text"><i class="bi bi-people"></i> ${cafe.seats}</p>
+                    <div class="amenities mb-3">
+                        ${cafe.has_toilet ? '<span class="amenity-true"><i class="bi bi-check-circle-fill amenity-icon"></i>Toilet</span>' : '<span class="amenity-false"><i class="bi bi-x-circle-fill amenity-icon"></i>No Toilet</span>'}
+                        ${cafe.has_wifi ? '<span class="amenity-true"><i class="bi bi-check-circle-fill amenity-icon"></i>Wifi</span>' : '<span class="amenity-false"><i class="bi bi-x-circle-fill amenity-icon"></i>No Wifi</span>'}
+                        ${cafe.has_sockets ? '<span class="amenity-true"><i class="bi bi-check-circle-fill amenity-icon"></i>Sockets</span>' : '<span class="amenity-false"><i class="bi bi-x-circle-fill amenity-icon"></i>No Sockets</span>'}
+                        ${cafe.can_take_calls ? '<span class="amenity-true"><i class="bi bi-check-circle-fill amenity-icon"></i>Calls</span>' : '<span class="amenity-false"><i class="bi bi-x-circle-fill amenity-icon"></i>No Calls</span>'}
+                    </div>
+                    <a href="${cafe.map_url}" target="_blank" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-map"></i> View on Map
+                    </a>
+                </div>
+                <div class="card-footer bg-transparent">
+                    <button class="btn btn-outline-secondary btn-sm" onclick="showUpdatePriceModal(${cafe.id}, '${cafe.coffee_price || ''}')">
+                        <i class="bi bi-pencil"></i> Update Price
+                    </button>
+                    <button class="btn btn-outline-danger btn-sm float-end" onclick="showDeleteModal(${cafe.id})">
+                        <i class="bi bi-trash"></i> Delete
+                    </button>
+                </div>
+            `;
+
+            col.appendChild(card);
+            return col;
+        }
+
+        // Function to show update price modal
+        function showUpdatePriceModal(cafeId, currentPrice) {
+            document.getElementById('cafeIdToUpdate').value = cafeId;
+            document.getElementById('newPrice').value = currentPrice;
+            const modal = new bootstrap.Modal(document.getElementById('updatePriceModal'));
+            modal.show();
+        }
+
+        // Function to update price
+        function updatePrice() {
+            const cafeId = document.getElementById('cafeIdToUpdate').value;
+            const newPrice = document.getElementById('newPrice').value;
+
+            if (!newPrice) {
+                alert('Please enter a new price');
+                return;
+            }
+
+            fetch(`/update-price/${cafeId}?new_price=${encodeURIComponent(newPrice)}`, {
+                method: 'PATCH'
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                }
+                throw new Error('Network response was not ok.');
+            })
+            .then(data => {
+                alert(data.response.success);
+                loadAllCafes();
+                const modal = bootstrap.Modal.getInstance(document.getElementById('updatePriceModal'));
+                modal.hide();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error updating price');
+            });
+        }
+
+        // Function to show delete confirmation modal
+        function showDeleteModal(cafeId) {
+            document.getElementById('cafeIdToDelete').value = cafeId;
+            const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+            modal.show();
+        }
+
+        // Function to delete a cafe
+        function deleteCafe() {
+            const cafeId = document.getElementById('cafeIdToDelete').value;
+            const apiKey = document.getElementById('apiKey').value;
+
+            if (!apiKey) {
+                alert('Please enter the API key');
+                return;
+            }
+
+            fetch(`/report-closed/${cafeId}?api-key=${encodeURIComponent(apiKey)}`, {
+                method: 'DELETE'
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                }
+                throw new Error('Network response was not ok.');
+            })
+            .then(data => {
+                alert(data.response.success);
+                loadAllCafes();
+                getRandomCafe();
+                const modal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
+                modal.hide();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error deleting cafe. Check your API key.');
+            });
+        }
+
+        // Function to add a new cafe
+        function addNewCafe() {
+            const cafeData = {
+                name: document.getElementById('name').value,
+                map_url: document.getElementById('map_url').value,
+                img_url: document.getElementById('img_url').value,
+                loc: document.getElementById('location').value,
+                seats: document.getElementById('seats').value,
+                coffee_price: document.getElementById('coffee_price').value,
+                sockets: document.getElementById('has_sockets').checked ? '1' : '0',
+                toilet: document.getElementById('has_toilet').checked ? '1' : '0',
+                wifi: document.getElementById('has_wifi').checked ? '1' : '0',
+                calls: document.getElementById('can_take_calls').checked ? '1' : '0'
+            };
+
+            // Simple validation
+            if (!cafeData.name || !cafeData.map_url || !cafeData.img_url || !cafeData.loc) {
+                alert('Please fill in all required fields');
+                return;
+            }
+
+            fetch('/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(cafeData)
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                }
+                throw new Error('Network response was not ok.');
+            })
+            .then(data => {
+                alert(data.response.success);
+                loadAllCafes();
+                getRandomCafe();
+                const modal = bootstrap.Modal.getInstance(document.getElementById('addCafeModal'));
+                modal.hide();
+                document.getElementById('addCafeForm').reset();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error adding cafe');
+            });
+        }
+
+
+    </script>
+
+ <div class="container py-5">
+        <h1 class="text-center mb-4">Welcome to Cafe & Wifi</h1>
+        <!-- UI content -->
+    </div>
+
+     <!-- Chat Button -->
+    <button class="btn btn-primary chat-btn" onclick="toggleChat()">
+        <i class="bi bi-chat-dots"></i>
+    </button>
+
+    <!-- Chat Box -->
+    <div id="chatBox" class="card chat-box">
+        <div class="card-header chat-header d-flex justify-content-between align-items-center">
+            <strong><i class="bi bi-robot"></i> Cafe Assistant</strong>
+            <button class="btn-close btn-close-white" onclick="toggleChat()"></button>
+        </div>
+        <div class="card-body chat-messages" id="chatMessages">
+            <div class="message bot-message">
+                <strong>CafeBot:</strong> Hi there! 👋 How can I help you find the perfect cafe today?
+            </div>
+            <div id="typingIndicator" class="typing-indicator">
+                <span class="typing-dots">
+                    <span>.</span><span>.</span><span>.</span>
+                </span>
+            </div>
+        </div>
+        <div class="card-footer chat-input-container">
+            <div class="input-group">
+                <input type="text" id="chatInput" class="form-control" placeholder="Type your question..."
+                       onkeydown="if(event.key==='Enter') sendMessage()">
+                <button class="btn btn-primary" onclick="sendMessage()">
+                    <i class="bi bi-send"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Your existing JavaScript functions remain the same
+        // ...
+
+        // Enhanced Chat Functionality
+        let allCafes = [];
+        let chatOpen = false;
+
+        // Load cafes when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAllCafes();
+            getRandomCafe();
+
+            // Fetch cafes for chat
+            fetch('/all')
+                .then(res => res.json())
+                .then(data => {
+                    allCafes = data.cafes || [];
+                })
+                .catch(err => console.error('Error loading cafes:', err));
+        });
+
+        function toggleChat() {
+            const chatBox = document.getElementById('chatBox');
+            chatOpen = !chatOpen;
+            chatBox.style.display = chatOpen ? 'block' : 'none';
+
+            if (chatOpen) {
+                document.getElementById('chatInput').focus();
+            }
+        }
+
+        function showTypingIndicator() {
+            const typingIndicator = document.getElementById('typingIndicator');
+            typingIndicator.style.display = 'block';
+            typingIndicator.innerHTML = '<span class="typing-dots"><span>.</span><span>.</span><span>.</span></span>';
+
+            // Animate typing dots
+            const dots = typingIndicator.querySelectorAll('.typing-dots span');
+            let dotCount = 0;
+            const typingAnimation = setInterval(() => {
+                dots.forEach(dot => dot.style.opacity = '0.2');
+                dots[dotCount % 3].style.opacity = '1';
+                dotCount++;
+            }, 500);
+
+            return typingAnimation;
+        }
+
+        function hideTypingIndicator(animation) {
+            clearInterval(animation);
+            document.getElementById('typingIndicator').style.display = 'none';
+        }
+
+        function addMessage(sender, message, isBot = false) {
+            const chatMessages = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isBot ? 'bot-message' : 'user-message'}`;
+            messageDiv.innerHTML = `<strong>${sender}:</strong> ${message}`;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function generateBotResponse(userMessage) {
+            const lowerMsg = userMessage.toLowerCase();
+
+            // Greetings
+            if (lowerMsg.includes('hello') || lowerMsg.includes('hi') || lowerMsg.includes('hey')) {
+                return "Hello! 👋 How can I help you find the perfect cafe today?";
+            }
+
+            // Help commands
+            if (lowerMsg.includes('help') || lowerMsg.includes('what can you do')) {
+                return "I can help you: \n- Find cafes by location \n- Tell you about amenities \n- Suggest random cafes \n- Explain how to add/update cafes \nJust ask!";
+            }
+
+            // Random cafe
+            if (lowerMsg.includes('random') || lowerMsg.includes('suggest')) {
+                return "You can discover a random cafe by clicking the 'Show Random Cafe' button in the Featured Cafe section!";
+            }
+
+            // Add cafe
+            if (lowerMsg.includes('add') || lowerMsg.includes('new cafe')) {
+                return "To add a new cafe, click the 'Add New Cafe' button and fill out the form with the cafe details.";
+            }
+
+            // Search functionality
+            if (lowerMsg.includes('search') || lowerMsg.includes('find') || lowerMsg.includes('near')) {
+                return "Use the search box at the top to find cafes by location. Just type a city or neighborhood and click Search!";
+            }
+
+            // Amenities
+            if (lowerMsg.includes('wifi') || lowerMsg.includes('internet')) {
+                return "Many cafes offer WiFi! Look for the <i class='bi bi-wifi'></i> icon on cafe cards to see which ones have it.";
+            }
+
+            if (lowerMsg.includes('toilet') || lowerMsg.includes('restroom')) {
+                return "Need a cafe with restrooms? Check for the <i class='bi bi-check-circle-fill' style='color:green'></i> toilet icon on cafe cards.";
+            }
+
+            if (lowerMsg.includes('socket') || lowerMsg.includes('plug') || lowerMsg.includes('power')) {
+                return "For cafes with power sockets, look for the <i class='bi bi-plug-fill'></i> icon on cafe cards.";
+            }
+
+            // Cafe-specific queries
+            const foundCafe = allCafes.find(c =>
+                userMessage.toLowerCase().includes(c.name.toLowerCase()) ||
+                userMessage.toLowerCase().includes(c.location.toLowerCase())
+            );
+
+            if (foundCafe) {
+                let response = `Here's what I know about ${foundCafe.name}:\n`;
+                response += `📍 Location: ${foundCafe.location}\n`;
+                response += `☕ Coffee Price: ${foundCafe.coffee_price || 'Not specified'}\n`;
+                response += `🪑 Seats: ${foundCafe.seats}\n`;
+                response += `Amenities: `;
+                response += foundCafe.has_wifi ? '📶 WiFi ' : '';
+                response += foundCafe.has_sockets ? '🔌 Sockets ' : '';
+                response += foundCafe.has_toilet ? '🚻 Toilet ' : '';
+                response += foundCafe.can_take_calls ? '📞 Calls OK ' : '';
+
+                return response;
+            }
+
+            // Default response
+            const defaultResponses = [
+                "I'm not sure I understand. Try asking about cafes, amenities, or how to add a new cafe.",
+                "Hmm, I'm a cafe assistant. Ask me about finding cafes or their features!",
+                "I specialize in cafe information. How can I help you with cafes today?"
+            ];
+
+            return defaultResponses[Math.floor(Math.random() * defaultResponses.length)];
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            if (!message) return;
+
+            // Add user message
+            addMessage('You', message, false);
+            input.value = '';
+
+            // Show typing indicator
+            const typingAnimation = showTypingIndicator();
+
+            // Simulate bot thinking
+            setTimeout(() => {
+                hideTypingIndicator(typingAnimation);
+
+                // Generate and display bot response
+                const response = generateBotResponse(message);
+                addMessage('CafeBot', response, true);
+            }, 1000 + Math.random() * 2000); // Random delay between 1-3 seconds
+        }
+    </script>
+</body>
+</html>
